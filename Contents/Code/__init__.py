@@ -68,7 +68,10 @@ def Channels():
         try:
             thumb = channel.xpath(".//xlimage/text()")[0]
         except:
-            thumb = R(ICON)
+            try:
+                thumb = channel.xpath(".//largeimage/text()")[0] 
+            except:
+                thumb = R(ICON)
             
         try:
             summary = channel.xpath(".//description/text()")[0]
