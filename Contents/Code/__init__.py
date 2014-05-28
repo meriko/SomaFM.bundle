@@ -60,6 +60,20 @@ def Channels():
         except:
             continue
             
+        formats = []
+        try:
+            if channel.xpath(".//fastpls/text()"):
+                formats.append('aac')
+        except:
+            pass
+            
+        try:
+            if channel.xpath(".//highestpls/text()"):
+                formats.append('mp3')
+        except:
+            if not formats:
+                continue
+            
         try:
             title = channel.xpath(".//title/text()")[0]
         except:
@@ -81,6 +95,7 @@ def Channels():
         oc.add(
             CreateTrackObject(
                 id = id,
+                formats = formats,
                 title = title,
                 thumb = thumb,
                 summary = summary
@@ -100,8 +115,40 @@ def Support():
     return oc
 
 ####################################################################################################
-@route(PREFIX + '/CreateTrackObject', include_container = bool) 
-def CreateTrackObject(id, title, thumb, summary, include_container = False):
+@route(PREFIX + '/CreateTrackObject', formats = list, include_container = bool) 
+def CreateTrackObject(id, formats, title, thumb, summary, include_container = False):
+    items = []
+    
+    if 'aac' in formats:
+        items.append(
+            MediaObject(
+                container = Container.MP4,
+                audio_codec = AudioCodec.AAC,
+                audio_channels = 2,
+                bitrate = 130,
+                parts = [
+                    PartObject(
+                        key = Callback(PlayAudio, id = id, fmt = 'aac', ext = 'aac')
+                    )
+                ]
+            )
+        )
+
+    if 'mp3' in formats:
+        items.append(
+            MediaObject(
+                container = Container.MP3,
+                audio_codec = AudioCodec.MP3,
+                audio_channels = 2,
+                bitrate = 128,
+                parts = [
+                    PartObject(
+                        key = Callback(PlayAudio, id = id, fmt = 'mp3', ext = 'mp3')
+                    )
+                ]
+            )
+        )
+        
     to = TrackObject(
             key = 
                 Callback(
@@ -116,30 +163,7 @@ def CreateTrackObject(id, title, thumb, summary, include_container = False):
             title = title,
             thumb = thumb,
             summary = summary,
-            items = [
-                MediaObject(
-                    container = Container.MP4,
-                    audio_codec = AudioCodec.AAC,
-                    audio_channels = 2,
-                    bitrate = 130,
-                    parts = [
-                        PartObject(
-                            key = Callback(PlayAudio, id = id, fmt = 'aac', ext = 'aac')
-                        )
-                    ]
-                ),
-                MediaObject(
-                    container = Container.MP3,
-                    audio_codec = AudioCodec.MP3,
-                    audio_channels = 2,
-                    bitrate = 128,
-                    parts = [
-                        PartObject(
-                            key = Callback(PlayAudio, id = id, fmt = 'mp3', ext = 'mp3')
-                        )
-                    ]
-                )
-            ]
+            items = items
     )
    
     if include_container:
