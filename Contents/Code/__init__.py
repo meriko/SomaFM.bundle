@@ -7,8 +7,9 @@ CHANNEL_URL = 'http://somafm.com/channels.xml'
 
 RE_FILE = Regex('File1=(https?://.+)')
 
-SUPPORT_TITLE   = 'Please support SomaFM!'
-SUPPORT_MESSAGE = "Visit http://somafm.com/support/ for more information.\r\n\r\nIt's a challenge to run a commercial-free, listener supported radio station in today's economic environment. It seems like we're always begging you for money, and that's because we have to: we rely entirely on you to keep us on the air. So please, make the effort to support SomaFM. We'll be there for you, but we need your financial help.\r\n\r\nWe hope that our music provides you with enjoyment, and we hope you'll offer a little something back our way to finance our continued operation. You can simply make a one-time donation, or sign up for an automatic monthly payment.\r\nSomaFM accepts Visa, Mastercard, Discover, American Express and Paypal online; or you can also send a check or money order drawn on US Dollars."
+SUPPORT_TITLE         = 'Please support SomaFM!'
+SUPPORT_MESSAGE_LONG  = "Visit http://somafm.com/support/ for more information.\r\n\r\nIt's a challenge to run a commercial-free, listener supported radio station in today's economic environment. It seems like we're always begging you for money, and that's because we have to: we rely entirely on you to keep us on the air. So please, make the effort to support SomaFM. We'll be there for you, but we need your financial help.\r\n\r\nWe hope that our music provides you with enjoyment, and we hope you'll offer a little something back our way to finance our continued operation. You can simply make a one-time donation, or sign up for an automatic monthly payment.\r\nSomaFM accepts Visa, Mastercard, Discover, American Express and Paypal online; or you can also send a check or money order drawn on US Dollars."
+SUPPORT_MESSAGE_SHORT = 'Please make a donation! Visit http://somafm.com/support/ for more information'
 
 ###################################################################################################
 def Start():
@@ -29,7 +30,7 @@ def MainMenu():
                     Support
                 ),
             title = SUPPORT_TITLE,
-            summary = SUPPORT_MESSAGE,
+            summary = SUPPORT_MESSAGE_LONG,
             thumb = R(ICON)
         )
     )
@@ -50,29 +51,23 @@ def MainMenu():
 ####################################################################################################
 @route(PREFIX + '/Channels')
 def Channels():
-    oc = ObjectContainer()
-    
+    oc = ObjectContainer(title2 = 'Channels')
+
     channels = XML.ObjectFromURL(CHANNEL_URL)
 
-    for channel in channels.xpath("//channels/channel"):
+    for channel in channels.xpath("//channels/channel"):            
         try:
-            id = channel.xpath("./@id")[0]
+            mp3_url = channel.xpath(".//*[@format='mp3']/text()")[0]
         except:
+            mp3_url = None
+            
+        try:
+            aac_url = channel.xpath(".//*[contains(@format,'aac')]/text()")[0]     
+        except:
+            aac_url = None
+            
+        if not(mp3_url or aac_url):
             continue
-            
-        formats = []
-        try:
-            if channel.xpath(".//fastpls/text()"):
-                formats.append('aac')
-        except:
-            pass
-            
-        try:
-            if channel.xpath(".//highestpls/text()"):
-                formats.append('mp3')
-        except:
-            if not formats:
-                continue
             
         try:
             title = channel.xpath(".//title/text()")[0]
@@ -85,7 +80,10 @@ def Channels():
             try:
                 thumb = channel.xpath(".//largeimage/text()")[0] 
             except:
-                thumb = R(ICON)
+                try:
+                    thumb = channel.xpath(".//image/text()")[0]
+                except:
+                    thumb = R(ICON)
             
         try:
             summary = channel.xpath(".//description/text()")[0]
@@ -94,8 +92,8 @@ def Channels():
         
         oc.add(
             CreateTrackObject(
-                id = id,
-                formats = formats,
+                mp3_url = mp3_url,
+                aac_url = aac_url,
                 title = title,
                 thumb = thumb,
                 summary = summary
@@ -110,31 +108,16 @@ def Support():
     oc = ObjectContainer()
     
     oc.header  = SUPPORT_TITLE
-    oc.message = SUPPORT_MESSAGE
+    oc.message = SUPPORT_MESSAGE_SHORT
     
     return oc
 
 ####################################################################################################
-@route(PREFIX + '/CreateTrackObject', formats = list, include_container = bool) 
-def CreateTrackObject(id, formats, title, thumb, summary, include_container = False):
+@route(PREFIX + '/CreateTrackObject', include_container = bool) 
+def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container = False):
     items = []
     
-    if 'aac' in formats:
-        items.append(
-            MediaObject(
-                container = Container.MP4,
-                audio_codec = AudioCodec.AAC,
-                audio_channels = 2,
-                bitrate = 130,
-                parts = [
-                    PartObject(
-                        key = Callback(PlayAudio, id = id, fmt = 'aac', ext = 'aac')
-                    )
-                ]
-            )
-        )
-
-    if 'mp3' in formats:
+    if mp3_url:
         items.append(
             MediaObject(
                 container = Container.MP3,
@@ -143,7 +126,22 @@ def CreateTrackObject(id, formats, title, thumb, summary, include_container = Fa
                 bitrate = 128,
                 parts = [
                     PartObject(
-                        key = Callback(PlayAudio, id = id, fmt = 'mp3', ext = 'mp3')
+                        key = Callback(PlayAudio, url = mp3_url, ext = 'mp3')
+                    )
+                ]
+            )
+        )
+    
+    if aac_url:
+        items.append(
+            MediaObject(
+                container = Container.MP4,
+                audio_codec = AudioCodec.AAC,
+                audio_channels = 2,
+                bitrate = 130,
+                parts = [
+                    PartObject(
+                        key = Callback(PlayAudio, url = aac_url, ext = 'aac')
                     )
                 ]
             )
@@ -153,7 +151,8 @@ def CreateTrackObject(id, formats, title, thumb, summary, include_container = Fa
             key = 
                 Callback(
                     CreateTrackObject,
-                    id = id,
+                    mp3_url = mp3_url,
+                    aac_url = aac_url,
                     title = title,
                     thumb = thumb,
                     summary = summary,
@@ -171,31 +170,19 @@ def CreateTrackObject(id, formats, title, thumb, summary, include_container = Fa
     else:
         return to
 
-####################################################################################################
-def PlayAudio(id, fmt):
-    channels = XML.ObjectFromURL(CHANNEL_URL)
+#################################################################################################### 
+def PlayAudio(url):
+    content  = HTTP.Request(url, cacheTime = 0).content
+    file_url = RE_FILE.search(content)
 
-    for channel in channels.xpath("//channels/channel"):
-        if id != channel.xpath("./@id")[0]:
-            continue
-        
-        if fmt == 'mp3':
-            url = channel.xpath(".//fastpls/text()")[0]
+    if file_url:
+        stream_url = file_url.group(1)
+        if stream_url[-1] == '/':
+            stream_url += ';'
         else:
-            url = channel.xpath(".//highestpls/text()")[0]
-        
-        content  = HTTP.Request(url, cacheTime = 0).content
-        file_url = RE_FILE.search(content)
-    
-        if file_url:
-            stream_url = file_url.group(1)
-            if stream_url[-1] == '/':
-                stream_url += ';'
-            else:
-                stream_url += '/;'
-            return Redirect(stream_url)
-        else:
-            raise Ex.MediaNotAvailable
-            
-    raise Ex.MediaNotAvailable
+            stream_url += '/;'
+        return Redirect(stream_url)
+    else:
+        raise Ex.MediaNotAvailable
+
 
