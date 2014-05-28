@@ -123,7 +123,6 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
                 container = Container.MP3,
                 audio_codec = AudioCodec.MP3,
                 audio_channels = 2,
-                bitrate = 128,
                 parts = [
                     PartObject(
                         key = Callback(PlayAudio, url = mp3_url, ext = 'mp3')
@@ -138,7 +137,6 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
                 container = Container.MP4,
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
-                bitrate = 130,
                 parts = [
                     PartObject(
                         key = Callback(PlayAudio, url = aac_url, ext = 'aac')
@@ -172,7 +170,7 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
 
 #################################################################################################### 
 def PlayAudio(url):
-    content  = HTTP.Request(url, cacheTime = 0).content
+    content  = HTTP.Request(url).content
     file_url = RE_FILE.search(content)
 
     if file_url:
