@@ -125,7 +125,7 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
                 audio_channels = 2,
                 parts = [
                     PartObject(
-                        key = Callback(PlayAudio, url = mp3_url, ext = 'mp3')
+                        key = Callback(PlayMP3, url = mp3_url)
                     )
                 ]
             )
@@ -139,7 +139,7 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
                 audio_channels = 2,
                 parts = [
                     PartObject(
-                        key = Callback(PlayAudio, url = aac_url, ext = 'aac')
+                        key = Callback(PlayAAC, url = aac_url)
                     )
                 ]
             )
@@ -169,6 +169,16 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
         return to
 
 #################################################################################################### 
+@route(PREFIX + '/PlayMP3.mp3')
+def PlayMP3(url):
+    return PlayAudio(url)
+    
+#################################################################################################### 
+@route(PREFIX + '/PlayAAC.aac')
+def PlayAAC(url):
+    return PlayAudio(url)
+    
+#################################################################################################### 
 def PlayAudio(url):
     content  = HTTP.Request(url).content
     file_url = RE_FILE.search(content)
@@ -179,6 +189,7 @@ def PlayAudio(url):
             stream_url += ';'
         else:
             stream_url += '/;'
+
         return Redirect(stream_url)
     else:
         raise Ex.MediaNotAvailable
