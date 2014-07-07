@@ -118,21 +118,23 @@ def Support():
 def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container = False):
     items = []
 
-    streams = [
-        AudioStreamObject(
-            codec = AudioCodec.AAC,
-            duration = 86400 * 1000,
-            channels = 2
-        )
-    ]
-
+    duration = 86400 * 1000
+    
     if mp3_url:
+        streams = [
+            AudioStreamObject(
+                codec = AudioCodec.MP3,
+                duration = duration,
+                channels = 2
+            )
+        ]
+
         items.append(
             MediaObject(
                 container = Container.MP3,
                 audio_codec = AudioCodec.MP3,
                 audio_channels = 2,
-                duration = 86400 * 1000,
+                duration = duration,
                 parts = [
                     PartObject(
                         key = Callback(PlayMP3, url = mp3_url),
@@ -143,12 +145,20 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
         )
     
     if aac_url:
+        streams = [
+            AudioStreamObject(
+                codec = AudioCodec.MP3,
+                duration = duration,
+                channels = 2
+            )
+        ]
+        
         items.append(
             MediaObject(
                 container = Container.MP4,
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
-                duration = 86400 * 1000,
+                duration = duration,
                 parts = [
                     PartObject(
                         key = Callback(PlayAAC, url = aac_url),
