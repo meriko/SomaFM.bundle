@@ -13,10 +13,11 @@ SUPPORT_MESSAGE_SHORT = 'Please make a donation! Visit http://somafm.com/support
 
 ###################################################################################################
 def Start():
-    ObjectContainer.title1 = TITLE
-    ObjectContainer.art    = R(ART)
-    DirectoryObject.thumb  = R(ICON)
-    HTTP.CacheTime         = CACHE_1HOUR
+    ObjectContainer.title1     = TITLE
+    ObjectContainer.art        = R(ART)
+    DirectoryObject.thumb      = R(ICON)
+    HTTP.CacheTime             = CACHE_1HOUR
+    HTTP.Headers['User-agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0'
     
 ###################################################################################################
 @handler(PREFIX, TITLE, thumb = ICON, art = ART)
@@ -116,16 +117,26 @@ def Support():
 @route(PREFIX + '/CreateTrackObject', include_container = bool) 
 def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container = False):
     items = []
-    
+
+    streams = [
+        AudioStreamObject(
+            codec = AudioCodec.AAC,
+            duration = 86400 * 1000,
+            channels = 2
+        )
+    ]
+
     if mp3_url:
         items.append(
             MediaObject(
                 container = Container.MP3,
                 audio_codec = AudioCodec.MP3,
                 audio_channels = 2,
+                duration = 86400 * 1000,
                 parts = [
                     PartObject(
-                        key = Callback(PlayMP3, url = mp3_url)
+                        key = Callback(PlayMP3, url = mp3_url),
+                        streams = streams
                     )
                 ]
             )
@@ -137,9 +148,11 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
                 container = Container.MP4,
                 audio_codec = AudioCodec.AAC,
                 audio_channels = 2,
+                duration = 86400 * 1000,
                 parts = [
                     PartObject(
-                        key = Callback(PlayAAC, url = aac_url)
+                        key = Callback(PlayAAC, url = aac_url),
+                        streams = streams
                     )
                 ]
             )
