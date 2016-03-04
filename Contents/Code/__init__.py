@@ -1,4 +1,4 @@
-TITLE  = 'Soma FM'
+TITLE  = 'SomaFM'
 PREFIX = '/music/somafm'
 ART    = 'art-default.jpg'
 ICON   = 'icon-default.png'
