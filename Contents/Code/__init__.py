@@ -147,7 +147,7 @@ def CreateTrackObject(mp3_url, aac_url, title, thumb, summary, include_container
     if aac_url:
         streams = [
             AudioStreamObject(
-                codec = AudioCodec.MP3,
+                codec = AudioCodec.AAC,
                 duration = duration,
                 channels = 2
             )
@@ -208,11 +208,6 @@ def PlayAudio(url):
 
     if file_url:
         stream_url = file_url.group(1)
-        if stream_url[-1] == '/':
-            stream_url += ';'
-        else:
-            stream_url += '/;'
-
         return Redirect(stream_url)
     else:
         raise Ex.MediaNotAvailable
